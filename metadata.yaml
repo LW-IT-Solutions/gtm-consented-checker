@@ -1,5 +1,5 @@
 homepage: "https://consented.eu"
-documentation: "https://consented.eu/docs"
+documentation: "https://github.com/LW-IT-Solutions/gtm-consented-checker#readme"
 versions:
-  - sha: 3868825223023e78414bb0e8943cb1fec2e902f7
-    changeNotes: Initial release; strict CSP and live consent checks.
+  - sha: 9f7ffcf0539f53554f0fcd753127db5fc9f9b792
+    changeNotes: Granular service overrides, native GA4 consent and safe Google fallback.
