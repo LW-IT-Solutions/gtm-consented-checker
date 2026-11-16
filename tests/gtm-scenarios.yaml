@@ -1,0 +1,20 @@
+scenarios:
+- name: Missing CMP stays blocked
+  code: |-
+    mock('getUrl', function () { return 'example.com'; });
+    mock('queryPermission', function () { return true; });
+    mock('copyFromWindow', function () { return undefined; });
+    mock('callInWindow', function () { return undefined; });
+    assertThat(runCode({propertyId:'00000000-0000-7000-8000-000000000001',allowedHosts:'example.com',provider:'consented',category:'analytics'})).isEqualTo(false);
+- name: Explicit Google Analytics grant is allowed
+  code: |-
+    mock('getUrl', function () { return 'example.com'; });
+    mock('queryPermission', function () { return true; });
+    mock('callInWindow', function () { return {analyticsStoragePurposeConsentStatus:1}; });
+    assertThat(runCode({allowedHosts:'example.com',provider:'google',category:'analytics'})).isEqualTo(true);
+- name: Google NOT_CONFIGURED is not consent
+  code: |-
+    mock('getUrl', function () { return 'example.com'; });
+    mock('queryPermission', function () { return true; });
+    mock('callInWindow', function () { return {analyticsStoragePurposeConsentStatus:4}; });
+    assertThat(runCode({allowedHosts:'example.com',provider:'google',category:'analytics'})).isEqualTo(false);

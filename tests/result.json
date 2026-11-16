@@ -1,0 +1,7 @@
+{
+  "ok": true,
+  "template": "gtm-consented-checker",
+  "checks": 140,
+  "simulation": "Node VM with declared permission enforcement; no eval and no installed dependencies",
+  "realGtmCompiler": false
+}
