@@ -1,0 +1,5 @@
+homepage: "https://consented.eu"
+documentation: "https://consented.eu/docs"
+versions:
+  - sha: aefe3c9712009c858c0db54721320b96205eecb4
+    changeNotes: Initial release; strict CSP and live consent checks.
