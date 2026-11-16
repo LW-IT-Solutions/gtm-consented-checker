@@ -18,3 +18,24 @@ scenarios:
     mock('queryPermission', function () { return true; });
     mock('callInWindow', function () { return {analyticsStoragePurposeConsentStatus:4}; });
     assertThat(runCode({allowedHosts:'example.com',provider:'google',category:'analytics'})).isEqualTo(false);
+
+- name: Granular GA4 grant with category disabled
+  code: |-
+    mock('getUrl', function () { return 'example.com'; });
+    mock('queryPermission', function () { return true; });
+    mock('copyFromWindow', function () { return true; });
+    mock('callInWindow', function (key) {
+      if (key === 'Consented.config') return {propertyId:'00000000-0000-7000-8000-000000000001',version:1,categories:[{key:'analytics',required:false}],services:[{id:'google-analytics-4',category:'analytics',essential:false}],settings:{}};
+      return {version:1,categories:{analytics:false},services:{'google-analytics-4':true}};
+    });
+    assertThat(runCode({propertyId:'00000000-0000-7000-8000-000000000001',allowedHosts:'example.com',provider:'consented',category:'analytics',service:'google-analytics-4'})).isEqualTo(true);
+- name: Explicit GA4 denial beats category grant
+  code: |-
+    mock('getUrl', function () { return 'example.com'; });
+    mock('queryPermission', function () { return true; });
+    mock('copyFromWindow', function () { return true; });
+    mock('callInWindow', function (key) {
+      if (key === 'Consented.config') return {propertyId:'00000000-0000-7000-8000-000000000001',version:1,categories:[{key:'analytics',required:false}],services:[{id:'google-analytics-4',category:'analytics',essential:false}],settings:{}};
+      return {version:1,categories:{analytics:true},services:{'google-analytics-4':false}};
+    });
+    assertThat(runCode({propertyId:'00000000-0000-7000-8000-000000000001',allowedHosts:'example.com',provider:'consented',category:'analytics',service:'google-analytics-4'})).isEqualTo(false);
