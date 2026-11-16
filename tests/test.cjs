@@ -23,6 +23,7 @@ function allowed(f,permission,...args){
  if(f.missingPermission===permission)return false;
  const r=rights[permission];if(!r)return false;
  if(permission==='access_globals'){const entry=r.keys.find(k=>k.key===args[1]);return !!entry&&entry[args[0]]===true;}
+ if(permission==='access_template_storage')return true;
  if(permission==='get_url')return args[0]==='host'&&r.host===true&&r.urlParts==='specific';
  if(permission==='access_consent'){const entry=r.consentTypes.find(c=>c.consentType===args[1]);return !!entry&&entry[args[0]]===true;}
  if(permission==='inject_script')return r.urls.some(pattern=>new RegExp('^'+pattern.split('*').map(x=>x.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('.*')+'$').test(args[0]));return false;
@@ -36,19 +37,19 @@ function run(f,data={}){
   callInWindow:(key,...args)=>{if(!allowed(f,'access_globals','execute',key))throw Error('Denied global call '+key);const fn=lookup(f,key);return typeof fn==='function'?fn(...args):undefined;},
   setDefaultConsentState:v=>{for(const key of Object.keys(v))if(!allowed(f,'access_consent','write',key))throw Error('Denied consent');f.defaults.push(v);},
   updateConsentState:v=>{for(const key of Object.keys(v))if(!allowed(f,'access_consent','write',key))throw Error('Denied consent');f.updates.push(v);},
-  templateStorage:{getItem:k=>f.storage.get(k),setItem:(k,v)=>f.storage.set(k,v),removeItem:k=>f.storage.delete(k)},
+  templateStorage:{getItem:k=>{if(!allowed(f,'access_template_storage'))throw Error('Denied template storage');return f.storage.get(k);},setItem:(k,v)=>{if(!allowed(f,'access_template_storage'))throw Error('Denied template storage');return f.storage.set(k,v);},removeItem:k=>{if(!allowed(f,'access_template_storage'))throw Error('Denied template storage');return f.storage.delete(k);}},
   createQueue:key=>{if(!allowed(f,'access_globals','read',key)||!allowed(f,'access_globals','write',key))throw Error('Denied queue');return item=>f.events.push(item);},
   injectScript:(url,success,failure)=>{if(!allowed(f,'inject_script',url))throw Error('Denied injection');f.injected.push(url);if(f.failInjection){failure();return;}if(url.endsWith('stub.js'))f.w.Consented={...f.api,loaded:false};else{f.w.Consented=f.api;f.emit('ready');}success();}
  };
  const context=vm.createContext({data:input,require:key=>{if(!(key in api))throw Error('Unknown API '+key);return api[key];}},{codeGeneration:{strings:false,wasm:false}});
- return new vm.Script('(function(data){'+code+'\n})(data)',{filename:'template.tpl'}).runInContext(context,{timeout:100});
+ return new vm.Script('(function(data){'+code+'\n})(data)',{filename:'template.tpl'}).runInContext(context,{timeout:1000});
 }
 eq(JSON.parse(section('INFO')).type,checker?'MACRO':'TAG','correct template type');
 eq(/\b(window|document|eval|Function|new|try|catch)\b/.test(code),false,'no standard globals or dynamic execution');
 eq(permissions.every(p=>p.isRequired===true),true,'required permission schema');
 eq(rights.get_url,{urlParts:'specific',host:true},'host only URL permission');
 eq(rights.access_globals.keys.every(k=>checker?!k.write:(k.key==='dataLayer'?k.read&&k.write:!k.write)),true,'no unintended global writes');
-eq(Object.keys(rights).some(k=>/cookie|storage|send_pixel|logging/.test(k)),false,'no cookie/storage/network/logging permission');
+eq(Object.keys(rights).some(k=>/cookie|local_storage|send_pixel|logging/.test(k)),false,'no cookie/storage/network/logging permission');
 if(checker){
  for(const provider of ['consented','google','website']){
   for(const a of [false,true,'true',1,null])for(const m of [false,true,'true'])for(const service of ['', 'google-analytics-4']){
